@@ -16,7 +16,7 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class) // 다른 엔티티 클래스가 이용가능함.
 // 시스템에 등록하는 과정이므로
 @Getter // 해당 공통 테이블 역할, 불변성 유지해야함, -> 변경 불가로 사용함.
-abstract class BaseEntity { // 유연하게 공통 작업시, 추상 클래스로 더 적합.
+public abstract class BaseEntity { // 유연하게 공통 작업시, 추상 클래스로 더 적합.
 
     @CreatedDate
     @Column(name="regDate", updatable = false)
