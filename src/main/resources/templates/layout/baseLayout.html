@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>DogMate - 반려견 산책 메이트</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+    <!--
+      필요한 경우 웹 폰트, 예: <link href="https://fonts.googleapis.com/css?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+    -->
+</head>
+<body>
+<div class="header">
+    <h1>DogMate</h1>
+</div>
+
+<div class="container">
+    <!-- 페이지별 콘텐츠가 들어갈 부분 -->
+    <div th:replace="${content}"></div>
+</div>
+
+<script th:src="@{/js/app.js}"></script>
+</body>
+</html>
