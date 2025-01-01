@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="ko" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      xmlns:th="http://www.thymeleaf.org"
+      layout:decorate="~{layout/base.html}">
+<head>
+    <title>매칭 상세</title>
+    <style>
+        .content-wrapper {
+            padding: 20px;
+            margin: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background-color: #ffffff;
+        }
+        .image-placeholder {
+            width: 100%;
+            height: 200px;
+            background-color: #f1f1f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #aaa;
+            margin-bottom: 20px;
+        }
+        .details {
+            margin-bottom: 20px;
+        }
+        .details h2 {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .details p {
+            margin: 0;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+        .participants {
+            margin-top: 20px;
+        }
+        .participants .participant {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .participant img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+        .participant span {
+            font-size: 14px;
+        }
+        .actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .btn {
+            width: 48%;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-apply {
+            background-color: #212529;
+            color: white;
+        }
+        .btn-cancel {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            color: #212529;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content" class="content-wrapper">
+    <!-- 이미지 placeholder -->
+    <div class="image-placeholder">
+        <span>이미지 미리보기</span>
+    </div>
+
+    <!-- 상세 정보 -->
+    <div class="details">
+        <h2 th:text="${room.title}">매칭 제목</h2>
+        <p th:text="'서울 강남구 삼성동 | ' + ${room.meetingDate}">날짜 및 위치</p>
+        <p th:text="'현재 인원: ' + ${room.currentParticipants} + ' / ' + ${room.maxParticipants}">인원 현황</p>
+        <p th:text="'시간: ' + ${room.meetingTime}">모임 시간</p>
+        <p th:text="${room.place}">모임 장소</p>
+    </div>
+
+    <!-- 참가자 정보 -->
+    <div class="participants">
+        <h2>참가자</h2>
+        <!-- 승인 상태(ACCEPTED)인 참여자들 -->
+        <div class="participant" th:each="p : ${participants}">
+            <!-- 사용자 프로필 이미지(필요 시) -->
+            <img th:src="@{/img/user-default.png}" alt="참가자 이미지">
+            <!-- DB에서 불러온 유저 이름 표시 -->
+            <span th:text="${p.userName}">참가자 이름</span>
+        </div>
+    </div>
+
+    <!-- 신청 버튼 -->
+    <div class="actions">
+        <button type="button" class="btn btn-cancel" onclick="window.history.back();">신청취소</button>
+        <form th:action="@{/matching/apply/{roomId}(roomId=${room.roomId})}" method="post" style="display:inline;">
+            <button type="submit" class="btn btn-apply">신청하기</button>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>매칭방 리스트</title>
+</head>
+<body>
+<h1>매칭방 목록</h1>
+<p>
+    <a th:href="@{/user/logout}">로그아웃</a> |
+    <a th:href="@{/matching/create}">방 만들기</a>
+</p>
+<table border="1">
+    <tr>
+        <th>방번호</th>
+        <th>제목</th>
+        <th>장소</th>
+        <th>날짜</th>
+        <th>시간</th>
+        <th>참가현황</th>
+        <th>방장</th>
+    </tr>
+    <tr th:each="room : ${rooms}">
+        <td th:text="${room.roomId}"></td>
+        <td>
+            <a th:href="@{/matching/detail/{id}(id=${room.roomId})}"
+               th:text="${room.title}"></a>
+        </td>
+        <td th:text="${room.place}"></td>
+        <td th:text="${room.meetingDate}"></td>
+        <td th:text="${room.meetingTime}"></td>
+        <td>
+            <span th:text="${room.currentParticipants}"></span> /
+            <span th:text="${room.maxParticipants}"></span>
+        </td>
+        <td th:text="${room.host.name}"></td>
+    </tr>
+</table>
+</body>
+</html>

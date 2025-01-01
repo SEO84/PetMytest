@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<!--<html lang="ko" xmlns:th="http://www.thymeleaf.org">-->
+<html lang="ko" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:th="http://www.thymeleaf.org"
+      layout:decorate="~{layout/base.html}">
+<head>
+    <meta charset="UTF-8">
+    <title>매칭등록</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f9f9f9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .container {
+            width: 400px;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .container h1 {
+            text-align: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, textarea, select, button {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        textarea {
+            resize: none;
+            height: 80px;
+        }
+        .address-container {
+            display: flex;
+            align-items: center;
+        }
+        .address-container input {
+            flex: 1;
+            margin-right: 10px;
+        }
+        .members-container {
+            margin-bottom: 15px;
+            padding: 10px 0;
+        }
+        .members-container .member-info {
+            margin-bottom: 8px;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+        }
+        .buttons button {
+            flex: 1;
+            margin: 0 5px;
+            cursor: pointer;
+            background: black;
+            color: white;
+            border: none;
+        }
+        .buttons button.cancel {
+            background: lightgray;
+            color: black;
+        }
+        /* 선택된 펫 목록 */
+        .selected-pets {
+            margin: 10px 0;
+        }
+        .selected-pets span {
+            display: inline-block;
+            background: #eee;
+            border-radius: 4px;
+            padding: 5px 10px;
+            margin-right: 5px;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+<div layout:fragment="content">
+<div class="container">
+    <h1>매칭등록</h1>
+
+    <!--
+       예: th:action="@{/matching/create}"
+       실제 구현 시, method="post" 로 서버에 폼 전송
+    -->
+    <form th:action="@{/matching/create}" method="post">
+        <!-- 제목 -->
+        <label for="title">제목</label>
+        <input type="text" id="title" name="title" placeholder="제목">
+
+        <!-- 내용 및 규칙 -->
+        <label for="description">내용 및 규칙</label>
+        <textarea id="description" name="description" placeholder="내용 및 규칙을 적어주세요."></textarea>
+
+        <!-- 모임장소 + 주소찾기 버튼 -->
+        <label for="address">모임장소</label>
+        <div class="address-container">
+            <input type="text" id="address" name="address" placeholder="주소">
+            <button type="button">주소찾기</button>
+        </div>
+
+        <!-- 시간 -->
+        <label for="time">모임시간</label>
+        <input type="time" id="time" name="time">
+
+        <!-- 인원 -->
+        <label for="members">모임인원</label>
+        <input type="number" id="members" name="members" placeholder="0명" min="1">
+
+        <!-- 멤버(로그인 유저) -->
+        <div class="members-container">
+            <div class="member-info">
+                <strong>멤버:</strong>
+                <span th:text="${loginUser.name}">로그인유저명</span>
+            </div>
+
+            <!-- 반려동물 선택 -->
+            <div>
+                <strong>반려동물 선택</strong>
+                <!--
+                    userPets: Controller에서
+                    model.addAttribute("userPets", petService.findAllByUserId(loginUser.getUserId()));
+                -->
+                <select id="petSelect">
+                    <option value="">-- 내 반려동물 선택 --</option>
+                    <option th:each="pet : ${userPets}"
+                            th:value="${pet.petId}"
+                            th:text="${pet.name}">
+                        강아지이름
+                    </option>
+                </select>
+                <!-- plus 버튼 -->
+                <button type="button" id="addPetBtn" style="width:auto;">+</button>
+            </div>
+
+            <!-- 선택된 펫 목록 표시 -->
+            <div class="selected-pets" id="selectedPetsContainer"></div>
+        </div>
+
+        <!-- 숨겨진 필드에 선택된 펫 ID 목록을 저장 (ex: "1,2,5") -->
+        <input type="hidden" name="selectedPetIds" id="selectedPetIds" />
+
+        <!-- 버튼들 -->
+        <div class="buttons">
+            <button type="button" class="cancel" onclick="window.history.back();">취소</button>
+            <button type="submit">등록</button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const petSelect = document.getElementById("petSelect");
+        const addPetBtn = document.getElementById("addPetBtn");
+        const selectedPetsContainer = document.getElementById("selectedPetsContainer");
+        const selectedPetIdsInput = document.getElementById("selectedPetIds");
+
+        // 선택된 펫 ID를 저장할 배열
+        let selectedPetIds = [];
+
+        addPetBtn.addEventListener("click", function() {
+            const petId = petSelect.value;
+            if (!petId) {
+                alert("반려동물을 선택해주세요.");
+                return;
+            }
+
+            // 이미 추가된 펫인지 확인
+            if (selectedPetIds.includes(petId)) {
+                alert("이미 선택한 반려동물입니다.");
+                return;
+            }
+
+            // 배열에 추가
+            selectedPetIds.push(petId);
+
+            // 숨김 필드에 "1,2,3" 같은 문자열로 저장
+            selectedPetIdsInput.value = selectedPetIds.join(",");
+
+            // 화면에 표시할 요소 생성
+            const petName = petSelect.options[petSelect.selectedIndex].text;
+            const petSpan = document.createElement("span");
+            petSpan.textContent = petName;
+            selectedPetsContainer.appendChild(petSpan);
+        });
+    });
+</script>
+</div>
+</body>
+</html>

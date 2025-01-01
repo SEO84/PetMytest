@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>회원가입</title>
+    <style>
+        /* 간단한 인라인 스타일(예시) */
+        body { font-family: sans-serif; margin: 20px; }
+        .container { max-width: 500px; margin: 0 auto; }
+        .form-group { margin-bottom: 15px; }
+        label { display: inline-block; width: 100px; }
+        input, select, textarea { width: 250px; padding: 5px; }
+        .form-title { font-size: 1.2rem; font-weight: bold; margin-top: 25px; }
+        button { margin-top: 15px; padding: 10px 15px; }
+        .error-msg { color: red; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>회원가입</h1>
+    <form th:action="@{/user/register}" method="post">
+        <!-- 유저 정보 -->
+        <div class="form-group">
+            <label for="email">이메일</label>
+            <input type="email" id="email" name="email" />
+        </div>
+        <div class="form-group">
+            <label for="password">비밀번호</label>
+            <input type="password" id="password" name="password" />
+        </div>
+        <div class="form-group">
+            <label for="name">이름</label>
+            <input type="text" id="name" name="name" />
+        </div>
+        <div class="form-group">
+            <label for="age">나이</label>
+            <input type="number" id="age" name="age" />
+        </div>
+        <div class="form-group">
+            <label for="gender">성별</label>
+            <select id="gender" name="gender">
+                <option value="Male">남성</option>
+                <option value="Female">여성</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="address">주소</label>
+            <input type="text" id="address" name="address" />
+        </div>
+        <div class="form-group">
+            <label for="phoneNumber">전화번호</label>
+            <input type="text" id="phoneNumber" name="phoneNumber" />
+        </div>
+
+        <!-- 펫 정보 입력 영역 -->
+        <div class="form-title">반려동물 정보</div>
+        <div class="form-group">
+            <label for="petName">이름</label>
+            <input type="text" id="petName" name="petName" />
+        </div>
+        <div class="form-group">
+            <label for="petType">종/타입</label>
+            <input type="text" id="petType" name="petType" placeholder="예: Beagle, Pome ..." />
+        </div>
+        <div class="form-group">
+            <label for="petAge">나이</label>
+            <input type="number" id="petAge" name="petAge" />
+        </div>
+        <div class="form-group">
+            <label for="petGender">성별</label>
+            <select id="petGender" name="petGender">
+                <option value="Male">남</option>
+                <option value="Female">여</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="petWeight">몸무게</label>
+            <input type="number" id="petWeight" name="petWeight" step="0.1" />
+        </div>
+        <div class="form-group">
+            <label for="petPersonality">성격</label>
+            <textarea id="petPersonality" name="petPersonality" rows="3"></textarea>
+        </div>
+
+        <!-- 에러 메시지 (if any) -->
+        <div th:if="${error != null}" class="error-msg">
+            <p th:text="${error}"></p>
+        </div>
+
+        <button type="submit">가입하기</button>
+    </form>
+</div>
+</body>
+</html>
