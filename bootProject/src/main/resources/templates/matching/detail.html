@@ -1,117 +1,193 @@
 <!DOCTYPE html>
-<html lang="ko" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
-      xmlns:th="http://www.thymeleaf.org"
-      layout:decorate="~{layout/base.html}">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>매칭 상세</title>
+    <title>매칭방 상세</title>
     <style>
-        .content-wrapper {
-            padding: 20px;
-            margin: 20px;
-            border: 1px solid #e0e0e0;
-            border-radius: 10px;
-            background-color: #ffffff;
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin: 20px auto;
         }
-        .image-placeholder {
-            width: 100%;
-            height: 200px;
-            background-color: #f1f1f1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-            color: #aaa;
-            margin-bottom: 20px;
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
         }
-        .details {
-            margin-bottom: 20px;
+        th {
+            background-color: #f2f2f2;
         }
-        .details h2 {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .details p {
-            margin: 0;
-            margin-bottom: 5px;
-            font-size: 14px;
-        }
-        .participants {
-            margin-top: 20px;
-        }
-        .participants .participant {
-            display: flex;
-            align-items: center;
-            margin-bottom: 10px;
-        }
-        .participant img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-right: 10px;
-        }
-        .participant span {
-            font-size: 14px;
-        }
-        .actions {
-            margin-top: 20px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .btn {
-            width: 48%;
-            padding: 10px;
+        .button {
+            padding: 5px 10px;
+            margin: 2px;
             border: none;
-            border-radius: 5px;
-            font-size: 14px;
+            border-radius: 4px;
             cursor: pointer;
         }
-        .btn-apply {
-            background-color: #212529;
+        .accept-btn {
+            background-color: #4CAF50;
             color: white;
         }
-        .btn-cancel {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            color: #212529;
+        .reject-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        .apply-btn {
+            background-color: #008CBA;
+            color: white;
         }
     </style>
+    <!-- 카카오맵 API 추가 -->
+    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_MAP_API_KEY&libraries=services"></script>
 </head>
 <body>
-<div layout:fragment="content" class="content-wrapper">
-    <!-- 이미지 placeholder -->
-    <div class="image-placeholder">
-        <span>이미지 미리보기</span>
-    </div>
+<h1 style="text-align:center;">매칭방 상세</h1>
 
-    <!-- 상세 정보 -->
-    <div class="details">
-        <h2 th:text="${room.title}">매칭 제목</h2>
-        <p th:text="'서울 강남구 삼성동 | ' + ${room.meetingDate}">날짜 및 위치</p>
-        <p th:text="'현재 인원: ' + ${room.currentParticipants} + ' / ' + ${room.maxParticipants}">인원 현황</p>
-        <p th:text="'시간: ' + ${room.meetingTime}">모임 시간</p>
-        <p th:text="${room.place}">모임 장소</p>
-    </div>
+<p style="text-align:center;">
+    <a th:href="@{/matching/list}">[ 매칭방 목록으로 돌아가기 ]</a>
+</p>
 
-    <!-- 참가자 정보 -->
-    <div class="participants">
-        <h2>참가자</h2>
-        <!-- 승인 상태(ACCEPTED)인 참여자들 -->
-        <div class="participant" th:each="p : ${participants}">
-            <!-- 사용자 프로필 이미지(필요 시) -->
-            <img th:src="@{/img/user-default.png}" alt="참가자 이미지">
-            <!-- DB에서 불러온 유저 이름 표시 -->
-            <span th:text="${p.userName}">참가자 이름</span>
-        </div>
-    </div>
+<table>
+    <thead>
+    <tr>
+        <th>방번호</th>
+        <th>제목</th>
+        <th>장소</th>
+        <th>날짜</th>
+        <th>시간</th>
+        <th>참가현황</th>
+        <th>방장</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr>
+        <td th:text="${room.roomId}">1</td>
+        <td th:text="${room.title}">제목</td>
+        <td th:text="${room.place}">장소</td>
+        <td th:text="${room.meetingDate}">날짜</td>
+        <td th:text="${room.meetingTime}">시간</td>
+        <td>
+            <span th:text="${room.currentParticipants}">0</span> /
+            <span th:text="${room.maxParticipants}">0</span>
+        </td>
+        <td th:text="${room.hostPet.user.name}">방장</td>
+    </tr>
+    </tbody>
+</table>
 
-    <!-- 신청 버튼 -->
-    <div class="actions">
-        <button type="button" class="btn btn-cancel" onclick="window.history.back();">신청취소</button>
-        <form th:action="@{/matching/apply/{roomId}(roomId=${room.roomId})}" method="post" style="display:inline;">
-            <button type="submit" class="btn btn-apply">신청하기</button>
-        </form>
-    </div>
+<!-- 방장인 경우: 참가 신청 목록 관리 -->
+<div th:if="${isHost}">
+    <h2 style="text-align:center;">참가 신청 목록</h2>
+
+    <!-- 승인 대기 중인 참가자 -->
+    <h3 style="text-align:center;">승인 대기 중</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>사용자 이름</th>
+            <th>펫 이름</th>
+            <th>신청 시간</th>
+            <th>상태</th>
+            <th>조치</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="participant : ${pendingParticipants}">
+            <td th:text="${participant.user.name}">사용자 이름</td>
+            <td th:text="${participant.pet.name}">펫 이름</td>
+            <td th:text="${#dates.format(participant.createdAt, 'yyyy-MM-dd HH:mm')}">신청 시간</td>
+            <td th:text="${participant.status}">상태</td>
+            <td>
+                <form th:action="@{/matching/accept/{roomId}/{userId}/{petId}(roomId=${room.roomId}, userId=${participant.user.userId}, petId=${participant.pet.petId})}" method="post" style="display:inline;">
+                    <!-- CSRF 토큰 추가 -->
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="button accept-btn">승인</button>
+                </form>
+                <form th:action="@{/matching/reject/{roomId}/{userId}/{petId}(roomId=${room.roomId}, userId=${participant.user.userId}, petId=${participant.pet.petId})}" method="post" style="display:inline;">
+                    <!-- CSRF 토큰 추가 -->
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+                    <button type="submit" class="button reject-btn">거절</button>
+                </form>
+            </td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(pendingParticipants)}">
+            <td colspan="5">승인 대기 중인 참가자가 없습니다.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- 승인된 참가자 목록 -->
+    <h3 style="text-align:center;">승인된 참가자</h3>
+    <table>
+        <thead>
+        <tr>
+            <th>사용자 이름</th>
+            <th>펫 이름</th>
+            <th>참가 시간</th>
+            <th>상태</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="participant : ${acceptedParticipants}">
+            <td th:text="${participant.user.name}">사용자 이름</td>
+            <td th:text="${participant.pet.name}">펫 이름</td>
+            <td th:text="${#dates.format(participant.createdAt, 'yyyy-MM-dd HH:mm')}">참가 시간</td>
+            <td th:text="${participant.status}">상태</td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(acceptedParticipants)}">
+            <td colspan="4">승인된 참가자가 없습니다.</td>
+        </tr>
+        </tbody>
+    </table>
 </div>
+
+<!-- 일반 유저인 경우: 참가자 목록 및 참가 신청 -->
+<div th:if="${!isHost}">
+    <h2 style="text-align:center;">참가자 목록</h2>
+    <table>
+        <thead>
+        <tr>
+            <th>사용자 이름</th>
+            <th>펫 이름</th>
+            <th>참가 시간</th>
+            <th>상태</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="participant : ${acceptedParticipants}">
+            <td th:text="${participant.user.name}">사용자 이름</td>
+            <td th:text="${participant.pet.name}">펫 이름</td>
+            <td th:text="${#dates.format(participant.createdAt, 'yyyy-MM-dd HH:mm')}">참가 시간</td>
+            <td th:text="${participant.status}">상태</td>
+        </tr>
+        <tr th:if="${#lists.isEmpty(acceptedParticipants)}">
+            <td colspan="4">참가자가 없습니다.</td>
+        </tr>
+        </tbody>
+    </table>
+
+    <!-- 참가 신청 섹션 -->
+    <h2 style="text-align:center;">참가 신청</h2>
+    <form th:action="@{/matching/apply/{roomId}(roomId=${room.roomId})}" method="post" style="text-align:center;">
+        <!-- CSRF 토큰 추가 -->
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <label for="additionalPetIds">반려동물 선택:</label>
+        <select name="additionalPetIds" id="additionalPetIds" multiple required>
+            <option th:each="pet : ${userPets}" th:value="${pet.petId}" th:text="${pet.name}"></option>
+        </select><br/><br/>
+        <button type="submit" class="button apply-btn">참가 신청</button>
+    </form>
+</div>
+
+<!-- 오류 메시지 표시 -->
+<div th:if="${errorMessage}" style="text-align:center; color: red;">
+    <p th:text="${errorMessage}"></p>
+</div>
+
+<!-- 카카오맵을 표시할 컨테이너 -->
+<div class="map-placeholder" style="width:500px;height:400px;margin:20px auto;"></div>
+
+<!-- 상세 페이지 전용 JavaScript 파일 로드 -->
+<script th:src="@{/js/detail-script.js}"></script>
 </body>
 </html>

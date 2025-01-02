@@ -1,4 +1,4 @@
-//  설치3번, 순서1 Querydsl 사용하기 위한 변수 설정.
+// 설치3번, 순서1 Querydsl 사용하기 위한 변수 설정.
 buildscript {
     ext {
         queryDslVersion = "5.0.0"
@@ -87,20 +87,19 @@ dependencies {
     // https://mvnrepository.com/artifact/org.thymeleaf.extras/thymeleaf-extras-springsecurity6
     implementation group: 'org.thymeleaf.extras', name: 'thymeleaf-extras-springsecurity6', version: '3.1.3.RELEASE'
 
+    // BCrypt Password Encoder
+    implementation 'org.springframework.boot:spring-boot-starter-security'
 }
 
 tasks.named('test') {
     useJUnitPlatform()
 }
 
-// Querydsl  설치, 순서3 프로젝트를 빌드 할 때마다, 해당 Q 도메인을 소스로 등록하는 과정을, 자동으로
+// Querydsl 설치, 순서3 프로젝트를 빌드 할 때마다, 해당 Q 도메인을 소스로 등록하는 과정을, 자동으로
 sourceSets {
-
     main {
         java {
             srcDirs = ["$projectDir/src/main/java", "$projectDir/build/generated"]
         }
     }
 }
-
-compileJava.dependsOn('clean')

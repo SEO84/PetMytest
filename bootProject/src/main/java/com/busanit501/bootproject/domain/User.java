@@ -1,53 +1,54 @@
+// User.java
 package com.busanit501.bootproject.domain;
 
+import com.busanit501.bootproject.enums.Gender;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Data
-@NoArgsConstructor
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "user_id")
     private Integer userId;
 
-    @Column(unique = true, nullable = false, length = 255)
+    @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String password;
 
-    @Column(nullable = false, length = 100)
     private String name;
 
     private Integer age;
 
     @Enumerated(EnumType.STRING)
-    private Gender gender; // ENUM('Male','Female')
+    private Gender gender;
 
     private String address;
 
-    private String profilePicture;
-
     private String phoneNumber;
 
-    private Boolean isVerified = false;
+    @Column(nullable = false)
+    private Boolean isVerified;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
+    // 반려동물과의 관계 설정
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Pet> pets = new ArrayList<>();
+    private List<Pet> pets;
 
-    public enum Gender {
-        Male, Female
-    }
+    // 기타 필드 및 관계 설정
 }

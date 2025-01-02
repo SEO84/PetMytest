@@ -2,14 +2,47 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>매칭방 리스트</title>
+    <style>
+        table {
+            width: 80%;
+            border-collapse: collapse;
+            margin: 20px auto;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        a.button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 20px;
+        }
+        .no-rooms {
+            text-align: center;
+            margin-top: 20px;
+            color: red;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
-<h1>매칭방 목록</h1>
-<p>
+<h1 style="text-align:center;">매칭방 목록</h1>
+
+<p style="text-align:center;">
     <a th:href="@{/user/logout}">로그아웃</a> |
-    <a th:href="@{/matching/create}">방 만들기</a>
+    <a th:href="@{/matching/create}" class="button">방 만들기</a>
 </p>
-<table border="1">
+
+<table>
+    <thead>
     <tr>
         <th>방번호</th>
         <th>제목</th>
@@ -18,22 +51,31 @@
         <th>시간</th>
         <th>참가현황</th>
         <th>방장</th>
+        <th>상세보기</th>
     </tr>
+    </thead>
+    <tbody>
     <tr th:each="room : ${rooms}">
-        <td th:text="${room.roomId}"></td>
+        <td th:text="${room.roomId}">1</td>
         <td>
             <a th:href="@{/matching/detail/{id}(id=${room.roomId})}"
-               th:text="${room.title}"></a>
+               th:text="${room.title}">제목</a>
         </td>
-        <td th:text="${room.place}"></td>
-        <td th:text="${room.meetingDate}"></td>
-        <td th:text="${room.meetingTime}"></td>
+        <td th:text="${room.place}">장소</td>
+        <td th:text="${#dates.format(room.meetingDate, 'yyyy-MM-dd')}">날짜</td>
+        <td th:text="${#dates.format(room.meetingTime, 'HH:mm')}">시간</td>
         <td>
-            <span th:text="${room.currentParticipants}"></span> /
-            <span th:text="${room.maxParticipants}"></span>
+            <span th:text="${room.currentParticipants}">0</span> /
+            <span th:text="${room.maxParticipants}">0</span>
         </td>
-        <td th:text="${room.host.name}"></td>
+        <td th:text="${room.host.name}">방장</td>
+        <td><a th:href="@{/matching/detail/{id}(id=${room.roomId})}">보기</a></td>
     </tr>
+    <!-- 매칭방이 없을 경우 메시지 표시 -->
+    <tr th:if="${#lists.isEmpty(rooms)}">
+        <td colspan="8" class="no-rooms">등록된 매칭방이 없습니다.</td>
+    </tr>
+    </tbody>
 </table>
 </body>
 </html>

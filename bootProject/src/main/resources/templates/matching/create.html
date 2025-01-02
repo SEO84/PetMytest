@@ -1,205 +1,213 @@
 <!DOCTYPE html>
-<!--<html lang="ko" xmlns:th="http://www.thymeleaf.org">-->
-<html lang="ko" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" xmlns:th="http://www.thymeleaf.org"
-      layout:decorate="~{layout/base.html}">
+<html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <title>매칭등록</title>
+    <title>매칭방 생성</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            margin: 0;
-            padding: 0;
+        /* 기본 스타일 추가 */
+        label {
+            display: inline-block;
+            width: 150px;
+            margin-top: 10px;
+        }
+        input, textarea, select {
+            width: 300px;
+            padding: 5px;
+            margin-top: 10px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 10px 20px;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+        }
+        .pet-selection {
+            margin-top: 10px;
+        }
+        .pet-selection label {
+            width: 150px;
+        }
+
+        /* 모달 오버레이 */
+        .modal {
+            position: fixed; /* 화면 전체 덮기 */
+            z-index: 9999;
+            left: 0; top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4); /* 어두운 배경 */
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
         }
-        .container {
-            width: 400px;
-            background: white;
+
+        /* 모달 내부 컨텐츠 박스 */
+        .modal-content {
+            background-color: #fff;
             padding: 20px;
+            width: 400px;
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            position: relative;
         }
-        .container h1 {
-            text-align: center;
+
+        /* 모달 닫기 버튼 */
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 15px;
             font-size: 24px;
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
             font-weight: bold;
-        }
-        input, textarea, select, button {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-        }
-        textarea {
-            resize: none;
-            height: 80px;
-        }
-        .address-container {
-            display: flex;
-            align-items: center;
-        }
-        .address-container input {
-            flex: 1;
-            margin-right: 10px;
-        }
-        .members-container {
-            margin-bottom: 15px;
-            padding: 10px 0;
-        }
-        .members-container .member-info {
-            margin-bottom: 8px;
-        }
-        .buttons {
-            display: flex;
-            justify-content: space-between;
-        }
-        .buttons button {
-            flex: 1;
-            margin: 0 5px;
             cursor: pointer;
-            background: black;
-            color: white;
-            border: none;
         }
-        .buttons button.cancel {
-            background: lightgray;
-            color: black;
-        }
-        /* 선택된 펫 목록 */
-        .selected-pets {
-            margin: 10px 0;
-        }
-        .selected-pets span {
-            display: inline-block;
-            background: #eee;
-            border-radius: 4px;
-            padding: 5px 10px;
-            margin-right: 5px;
-            margin-bottom: 5px;
-        }
+
+        /* 기타 폼 스타일은 기존과 동일, 필요시 추가 조정 */
     </style>
+    <script th:inline="javascript">
+        /*<![CDATA[*/
+        // 서버에서 전달된 userPets 데이터를 JavaScript 변수로 변환
+        var userPets = /*[[${userPets}]]*/ [];
+
+        // 펫 추가 기능을 위한 JavaScript 함수
+        function addPetSelection() {
+            const container = document.getElementById('petSelections');
+
+            // 새로운 펫 선택 필드 생성
+            const petDiv = document.createElement('div');
+            petDiv.classList.add('pet-selection');
+
+            // 라벨 생성
+            const label = document.createElement('label');
+            label.innerText = '추가 펫:';
+
+            // 셀렉트 박스 생성
+            const select = document.createElement('select');
+            select.name = 'additionalPetIds'; // 배열 형태로 받기 위해 이름 수정
+            select.required = true;
+
+            // 기본 옵션 추가
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.text = '-- 반려동물 선택 --';
+            select.appendChild(defaultOption);
+
+            // 서버에서 전달된 반려동물 목록을 기반으로 옵션 추가
+            userPets.forEach(function(pet) {
+                const option = document.createElement('option');
+                option.value = pet.petId;
+                option.textContent = pet.name;
+                select.appendChild(option);
+            });
+
+            // 제거 버튼 생성
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.innerText = '-';
+            removeButton.onclick = function() { removePetSelection(removeButton); };
+
+            // 펫 선택 필드에 라벨, 셀렉트 박스, 제거 버튼 추가
+            petDiv.appendChild(label);
+            petDiv.appendChild(select);
+            petDiv.appendChild(removeButton);
+
+            // 컨테이너에 새로운 펫 선택 필드 추가
+            container.appendChild(petDiv);
+        }
+
+        // 펫 선택 필드 제거 함수
+        function removePetSelection(button) {
+            const petDiv = button.parentElement;
+            petDiv.remove();
+        }
+        /*]]>*/
+    </script>
 </head>
 <body>
-<div layout:fragment="content">
-<div class="container">
-    <h1>매칭등록</h1>
+<h1>매칭방 생성</h1>
 
-    <!--
-       예: th:action="@{/matching/create}"
-       실제 구현 시, method="post" 로 서버에 폼 전송
-    -->
-    <form th:action="@{/matching/create}" method="post">
-        <!-- 제목 -->
-        <label for="title">제목</label>
-        <input type="text" id="title" name="title" placeholder="제목">
+<form th:action="@{/matching/create}" th:object="${matchingRoomDTO}" method="post">
+    <label for="title">제목:</label>
+    <input type="text" id="title" th:field="*{title}" required/>
+    <div th:if="${#fields.hasErrors('title')}" th:errors="*{title}" class="error-message"></div><br/>
 
-        <!-- 내용 및 규칙 -->
-        <label for="description">내용 및 규칙</label>
-        <textarea id="description" name="description" placeholder="내용 및 규칙을 적어주세요."></textarea>
+    <label for="description">설명:</label>
+    <textarea id="description" th:field="*{description}" required></textarea>
+    <div th:if="${#fields.hasErrors('description')}" th:errors="*{description}" class="error-message"></div><br/>
 
-        <!-- 모임장소 + 주소찾기 버튼 -->
-        <label for="address">모임장소</label>
-        <div class="address-container">
-            <input type="text" id="address" name="address" placeholder="주소">
-            <button type="button">주소찾기</button>
-        </div>
+    <label for="place">장소:</label>
+    <input type="text" id="place" th:field="*{place}" required/>
+    <div th:if="${#fields.hasErrors('place')}" th:errors="*{place}" class="error-message"></div><br/>
 
-        <!-- 시간 -->
-        <label for="time">모임시간</label>
-        <input type="time" id="time" name="time">
+    <label for="meetingDate">날짜:</label>
+    <input type="date" id="meetingDate" th:field="*{meetingDate}" required/>
+    <div th:if="${#fields.hasErrors('meetingDate')}" th:errors="*{meetingDate}" class="error-message"></div><br/>
 
-        <!-- 인원 -->
-        <label for="members">모임인원</label>
-        <input type="number" id="members" name="members" placeholder="0명" min="1">
+    <label for="meetingTime">시간:</label>
+    <input type="time" id="meetingTime" th:field="*{meetingTime}" required/>
+    <div th:if="${#fields.hasErrors('meetingTime')}" th:errors="*{meetingTime}" class="error-message"></div><br/>
 
-        <!-- 멤버(로그인 유저) -->
-        <div class="members-container">
-            <div class="member-info">
-                <strong>멤버:</strong>
-                <span th:text="${loginUser.name}">로그인유저명</span>
-            </div>
+    <label for="maxParticipants">최대 인원:</label>
+    <input type="number" id="maxParticipants" th:field="*{maxParticipants}" min="1" required/>
+    <div th:if="${#fields.hasErrors('maxParticipants')}" th:errors="*{maxParticipants}" class="error-message"></div><br/>
 
-            <!-- 반려동물 선택 -->
-            <div>
-                <strong>반려동물 선택</strong>
-                <!--
-                    userPets: Controller에서
-                    model.addAttribute("userPets", petService.findAllByUserId(loginUser.getUserId()));
-                -->
-                <select id="petSelect">
-                    <option value="">-- 내 반려동물 선택 --</option>
-                    <option th:each="pet : ${userPets}"
-                            th:value="${pet.petId}"
-                            th:text="${pet.name}">
-                        강아지이름
-                    </option>
-                </select>
-                <!-- plus 버튼 -->
-                <button type="button" id="addPetBtn" style="width:auto;">+</button>
-            </div>
+    <!-- 방장의 반려동물 선택 드롭다운 추가 -->
+    <label for="hostPet">방장의 반려동물:</label>
+    <select id="hostPet" th:field="*{hostPetId}" required>
+        <option value="">-- 반려동물 선택 --</option>
+        <option th:each="pet : ${userPets}"
+                th:value="${pet.petId}"
+                th:text="${pet.name}">
+        </option>
+    </select>
+    <div th:if="${#fields.hasErrors('hostPetId')}" th:errors="*{hostPetId}" class="error-message"></div><br/>
 
-            <!-- 선택된 펫 목록 표시 -->
-            <div class="selected-pets" id="selectedPetsContainer"></div>
-        </div>
+    <!-- 추가 펫 선택 섹션 -->
+    <div id="petSelections"></div>
+    <button type="button" onclick="addPetSelection()">펫 추가</button><br/><br/>
 
-        <!-- 숨겨진 필드에 선택된 펫 ID 목록을 저장 (ex: "1,2,5") -->
-        <input type="hidden" name="selectedPetIds" id="selectedPetIds" />
+    <!-- 오류 메시지 표시 -->
+    <div th:if="${errorMessage}" class="error-message" th:text="${errorMessage}"></div>
 
-        <!-- 버튼들 -->
-        <div class="buttons">
-            <button type="button" class="cancel" onclick="window.history.back();">취소</button>
-            <button type="submit">등록</button>
-        </div>
-    </form>
+    <button type="submit">방 생성</button>
+</form>
+
+<p><a th:href="@{/matching/list}">[ 리스트로 돌아가기 ]</a></p>
+
+<!-- 새 펫 등록 모달 -->
+<div id="newPetModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span id="closeModalBtn" class="close-btn">&times;</span>
+        <h2>새 반려동물 등록</h2>
+        <form id="newPetForm">
+            <label for="newPetName">이름:</label>
+            <input type="text" id="newPetName" required/><br/>
+
+            <label for="newPetType">종류:</label>
+            <input type="text" id="newPetType" required/><br/>
+
+            <label for="newPetAge">나이:</label>
+            <input type="number" id="newPetAge" min="0" required/><br/>
+
+            <label for="newPetGender">성별:</label>
+            <select id="newPetGender" required>
+                <option value="">-- 선택 --</option>
+                <option value="MALE">남성</option>
+                <option value="FEMALE">여성</option>
+            </select><br/>
+
+            <label for="newPetWeight">몸무게:</label>
+            <input type="number" step="0.1" id="newPetWeight" min="0" required/><br/>
+
+            <label for="newPetPersonality">성격:</label>
+            <input type="text" id="newPetPersonality"/><br/>
+
+            <button type="button" id="savePetBtn">저장</button>
+        </form>
+    </div>
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const petSelect = document.getElementById("petSelect");
-        const addPetBtn = document.getElementById("addPetBtn");
-        const selectedPetsContainer = document.getElementById("selectedPetsContainer");
-        const selectedPetIdsInput = document.getElementById("selectedPetIds");
+<!-- JavaScript 파일 연결 (외부 파일로 분리하는 것을 권장) -->
+<script th:src="@{/js/create.js}"></script>
 
-        // 선택된 펫 ID를 저장할 배열
-        let selectedPetIds = [];
-
-        addPetBtn.addEventListener("click", function() {
-            const petId = petSelect.value;
-            if (!petId) {
-                alert("반려동물을 선택해주세요.");
-                return;
-            }
-
-            // 이미 추가된 펫인지 확인
-            if (selectedPetIds.includes(petId)) {
-                alert("이미 선택한 반려동물입니다.");
-                return;
-            }
-
-            // 배열에 추가
-            selectedPetIds.push(petId);
-
-            // 숨김 필드에 "1,2,3" 같은 문자열로 저장
-            selectedPetIdsInput.value = selectedPetIds.join(",");
-
-            // 화면에 표시할 요소 생성
-            const petName = petSelect.options[petSelect.selectedIndex].text;
-            const petSpan = document.createElement("span");
-            petSpan.textContent = petName;
-            selectedPetsContainer.appendChild(petSpan);
-        });
-    });
-</script>
-</div>
 </body>
 </html>

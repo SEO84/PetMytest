@@ -1,14 +1,15 @@
+// PetService.java
 package com.busanit501.bootproject.service;
 
 import com.busanit501.bootproject.domain.Pet;
 import com.busanit501.bootproject.domain.User;
 import com.busanit501.bootproject.dto.PetDTO;
+import com.busanit501.bootproject.enums.Gender;
 import com.busanit501.bootproject.repository.PetRepository;
 import com.busanit501.bootproject.repository.UserRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -31,19 +32,16 @@ public class PetService {
         pet.setName(dto.getName());
         pet.setType(dto.getType());
         pet.setAge(dto.getAge());
-        pet.setGender(dto.getGender().equalsIgnoreCase("Male")
-                ? Pet.Gender.Male
-                : Pet.Gender.Female);
+        pet.setGender(dto.getPetGender()); // 직접 할당
         pet.setWeight(dto.getWeight());
         pet.setPersonality(dto.getPersonality());
-        pet.setCreatedAt(LocalDateTime.now());
-        pet.setUpdatedAt(LocalDateTime.now());
+        // createdAt과 updatedAt은 @CreationTimestamp와 @UpdateTimestamp로 자동 설정
         return petRepository.save(pet);
     }
 
     // 로그인 유저의 모든 펫 조회
+    @Transactional(readOnly = true)
     public List<Pet> findAllByUserId(Integer userId){
         return petRepository.findByUserUserId(userId);
     }
 }
-

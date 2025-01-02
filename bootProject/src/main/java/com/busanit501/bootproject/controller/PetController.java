@@ -1,49 +1,84 @@
+// PetController.java
 package com.busanit501.bootproject.controller;
 
 import com.busanit501.bootproject.domain.Pet;
 import com.busanit501.bootproject.domain.User;
 import com.busanit501.bootproject.dto.PetDTO;
-import com.busanit501.bootproject.service.PetService;
-import com.busanit501.bootproject.service.UserService;
-import jakarta.servlet.http.HttpSession;
-import org.springframework.http.HttpStatus;
+import com.busanit501.bootproject.repository.PetRepository;
+import com.busanit501.bootproject.repository.UserRepository;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
-import java.util.HashMap;
-import java.util.Map;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/pet")
 public class PetController {
 
-    private final PetService petService;
-    private final UserService userService;
+    private final PetRepository petRepository;
+    private final UserRepository userRepository;
 
-    public PetController(PetService petService, UserService userService) {
-        this.petService = petService;
-        this.userService = userService;
+    @Autowired
+    public PetController(PetRepository petRepository, UserRepository userRepository) {
+        this.petRepository = petRepository;
+        this.userRepository = userRepository;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registerPet(@RequestBody PetDTO dto, HttpSession session) {
-        // 1) 세션에서 로그인 유저 찾기
-        User loginUser = (User) session.getAttribute("loginUser");
-        if (loginUser == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("로그인이 필요합니다.");
+    public ResponseEntity<?> registerPet(@Valid @RequestBody PetDTO petDTO, Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+
+            Pet pet = new Pet();
+            pet.setUser(user);
+            pet.setName(petDTO.getName());
+            pet.setType(petDTO.getType());
+            pet.setAge(petDTO.getAge());
+            pet.setGender(petDTO.getPetGender());
+            pet.setWeight(petDTO.getWeight());
+            pet.setPersonality(petDTO.getPersonality());
+
+            Pet savedPet = petRepository.save(pet);
+
+            // 응답 데이터 구성
+            return ResponseEntity.ok(new PetResponse(savedPet.getPetId(), savedPet.getName()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
+        }
+    }
+
+    // 응답용 DTO 클래스
+    static class PetResponse {
+        private Integer petId;
+        private String name;
+
+        public PetResponse(Integer petId, String name) {
+            this.petId = petId;
+            this.name = name;
         }
 
-        // 2) DB 등록
-        Pet pet = petService.createPet(loginUser.getUserId(), dto);
-        // 3) JSON으로 petId, petName 등 반환
-        Map<String, Object> result = new HashMap<>();
-        result.put("petId", pet.getPetId());
-        result.put("name", pet.getName());
-        return ResponseEntity.ok(result);
+        public Integer getPetId() {
+            return petId;
+        }
+
+        public String getName() {
+            return name;
+        }
+    }
+
+    // 에러 응답용 DTO 클래스
+    static class ErrorResponse {
+        private String message;
+
+        public ErrorResponse(String message) {
+            this.message = message;
+        }
+
+        public String getMessage() {
+            return message;
+        }
     }
 }
-

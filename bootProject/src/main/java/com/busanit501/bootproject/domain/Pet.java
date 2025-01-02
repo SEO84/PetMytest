@@ -1,48 +1,47 @@
+// Pet.java
 package com.busanit501.bootproject.domain;
 
+import com.busanit501.bootproject.enums.Gender;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
 @Data
-@NoArgsConstructor
 @Entity
 @Table(name = "pets")
 public class Pet {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "pet_id")
     private Integer petId;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id")
-    private User user;  // 소유자
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(nullable = false, length = 100)
+    @Column(nullable = false)
     private String name;
 
-    @Column(nullable = false, length = 50)
-    private String type; // 예: "Beagle", "Pome", etc.
+    private String type; // 예: "Beagle", "Pome" 등
 
     private Integer age;
 
     @Enumerated(EnumType.STRING)
-    private Gender gender; // ENUM('Male','Female')
-
-    @Lob
-    private String personality;
+    private Gender gender;
 
     private Float weight;
 
-    private String profilePicture;
+    private String personality;
 
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @CreationTimestamp
+    @Column(nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
+    @UpdateTimestamp
     private LocalDateTime updatedAt;
 
-    public enum Gender {
-        Male, Female
-    }
+    // 기타 필드 및 관계 설정
 }

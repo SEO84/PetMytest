@@ -1,103 +1,42 @@
-// detail-script.js
+// src/main/resources/static/js/detail-script.js
+
 document.addEventListener('DOMContentLoaded', function() {
-    // 카카오맵 초기화 (API 키 필요)
+    // ================================
+    // 1) 카카오맵 초기화 (매칭방의 실제 장소 좌표 필요)
+    // ================================
     function initMap() {
         if (typeof kakao !== 'undefined') {
             const mapContainer = document.querySelector('.map-placeholder');
-            const options = {
-                center: new kakao.maps.LatLng(37.5665, 126.9780),
-                level: 3
-            };
-            const map = new kakao.maps.Map(mapContainer, options);
+            const place = /*[[${room.place}]]*/ '서울특별시';
+            const geocoder = new kakao.maps.services.Geocoder();
 
-            // 마커 추가
-            const marker = new kakao.maps.Marker({
-                position: map.getCenter()
-            });
-            marker.setMap(map);
-        }
-    }
+            geocoder.addressSearch(place, function(result, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    const coords = new kakao.maps.LatLng(result[0].y, result[0].x);
 
-    // 신청하기 버튼 이벤트
-    const applyButton = document.querySelector('.btn-apply');
-    applyButton?.addEventListener('click', async function() {
-        try {
-            const response = await fetch('/api/matching/apply', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    matchingId: getMatchingIdFromUrl(),
-                })
-            });
+                    const map = new kakao.maps.Map(mapContainer, {
+                        center: coords,
+                        level: 3
+                    });
 
-            if (response.ok) {
-                alert('신청이 완료되었습니다.');
-                updateApplyButton();
-            } else {
-                throw new Error('신청 실패');
-            }
-        } catch (error) {
-            alert('신청 중 오류가 발생했습니다.');
-            console.error(error);
-        }
-    });
+                    const marker = new kakao.maps.Marker({
+                        position: coords
+                    });
+                    marker.setMap(map);
 
-    // 신청 취소 버튼 이벤트
-    const cancelButton = document.querySelector('.btn-chat');
-    cancelButton?.addEventListener('click', async function() {
-        if (confirm('신청을 취소하시겠습니까?')) {
-            try {
-                const response = await fetch('/api/matching/cancel', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        matchingId: getMatchingIdFromUrl(),
-                    })
-                });
-
-                if (response.ok) {
-                    alert('신청이 취소되었습니다.');
-                    updateApplyButton();
+                    const infowindow = new kakao.maps.InfoWindow({
+                        content: `<div style="padding:5px;">${place}</div>`
+                    });
+                    infowindow.open(map, marker);
                 } else {
-                    throw new Error('취소 실패');
-                }
-            } catch (error) {
-                alert('취소 중 오류가 발생했습니다.');
-                console.error(error);
-            }
-        }
-    });
-
-    // 버튼 상태 업데이트
-    function updateApplyButton() {
-        const applyButton = document.querySelector('.btn-apply');
-        const cancelButton = document.querySelector('.btn-chat');
-
-        // API로 현재 신청 상태 확인
-        fetch(`/api/matching/status/${getMatchingIdFromUrl()}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.isApplied) {
-                    applyButton.style.display = 'none';
-                    cancelButton.style.display = 'block';
-                } else {
-                    applyButton.style.display = 'block';
-                    cancelButton.style.display = 'none';
+                    console.error('주소 검색 실패:', status);
                 }
             });
+        }
     }
 
-    // URL에서 매칭 ID 추출
-    function getMatchingIdFromUrl() {
-        const urlParams = new URLSearchParams(window.location.search);
-        return urlParams.get('id');
-    }
-
-    // 초기화
+    // ================================
+    // 2) 카카오맵 초기화 호출
+    // ================================
     initMap();
-    updateApplyButton();
 });
