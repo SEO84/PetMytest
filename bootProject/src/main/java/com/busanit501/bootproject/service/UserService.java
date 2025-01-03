@@ -8,7 +8,8 @@ import com.busanit501.bootproject.dto.UserRegisterDTO;
 import com.busanit501.bootproject.enums.Gender;
 import com.busanit501.bootproject.repository.PetRepository;
 import com.busanit501.bootproject.repository.UserRepository;
-import org.springframework.security.crypto.password.PasswordEncoder;
+
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,13 +18,13 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final PetRepository petRepository;
-    private final PasswordEncoder passwordEncoder;
+
 
     // 생성자 주입
-    public UserService(UserRepository userRepository, PetRepository petRepository, PasswordEncoder passwordEncoder) {
+    public UserService(UserRepository userRepository, PetRepository petRepository) {
         this.userRepository = userRepository;
         this.petRepository = petRepository;
-        this.passwordEncoder = passwordEncoder;
+
     }
 
     /**
@@ -39,7 +40,7 @@ public class UserService {
         // 사용자 생성
         User user = new User();
         user.setEmail(dto.getEmail());
-        user.setPassword(passwordEncoder.encode(dto.getPassword())); // 비밀번호 해싱
+        user.setPassword(dto.getPassword()); // 비밀번호 해싱
         user.setName(dto.getName());
         user.setAge(dto.getAge());
         user.setGender(dto.getGender());
@@ -71,9 +72,12 @@ public class UserService {
     public User login(UserLoginDTO dto) {
         User user = userRepository.findByEmail(dto.getEmail())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
-        if (!passwordEncoder.matches(dto.getPassword(), user.getPassword())) {
+
+        // 비밀번호 일치 여부 확인 (평문 비교)
+        if (!dto.getPassword().equals(user.getPassword())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
         }
+
         return user;
     }
 

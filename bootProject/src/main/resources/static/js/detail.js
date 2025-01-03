@@ -1,4 +1,4 @@
-// src/main/resources/static/js/detail-script.js
+// src/main/resources/static/js/detail.js
 
 document.addEventListener('DOMContentLoaded', function() {
     // ================================
