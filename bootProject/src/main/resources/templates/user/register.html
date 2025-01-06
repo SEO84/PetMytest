@@ -2,102 +2,95 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <title>회원가입</title>
-    <style>
-        /* 간단한 인라인 스타일 */
-        body { font-family: sans-serif; margin: 20px; }
-        .container { max-width: 600px; margin: 0 auto; }
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; }
-        input, select, textarea { width: 100%; padding: 8px; }
-        button { padding: 10px 15px; }
-        .error-msg { color: red; }
-        .form-title { margin-top: 30px; font-size: 1.2em; }
-    </style>
+    <link rel="stylesheet" th:href="@{/css/register.css}">
 </head>
 <body>
 <div class="container">
     <h1>회원가입</h1>
     <form th:action="@{/user/register}" th:object="${userRegisterDTO}" method="post">
-        <!-- CSRF 토큰 제거 -->
-
         <!-- 유저 정보 -->
-        <div class="form-group">
-            <label for="email">이메일</label>
-            <input type="email" id="email" th:field="*{email}" required/>
-            <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="password">비밀번호</label>
-            <input type="password" id="password" th:field="*{password}" required/>
-            <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="name">이름</label>
-            <input type="text" id="name" th:field="*{name}" required/>
-            <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="age">나이</label>
-            <input type="number" id="age" th:field="*{age}" min="0" required/>
-            <div th:if="${#fields.hasErrors('age')}" th:errors="*{age}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="gender">성별</label>
-            <select id="gender" th:field="*{gender}" required>
-                <option value="" disabled selected>-- 선택 --</option>
-                <option value="MALE">남성</option>
-                <option value="FEMALE">여성</option>
-            </select>
-            <div th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="address">주소</label>
-            <input type="text" id="address" th:field="*{address}" required/>
-            <div th:if="${#fields.hasErrors('address')}" th:errors="*{address}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="phoneNumber">전화번호</label>
-            <input type="text" id="phoneNumber" th:field="*{phoneNumber}" required/>
-            <div th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}" class="error-msg"></div>
-        </div>
+        <fieldset>
+            <legend>회원 정보</legend>
+            <div class="form-group">
+                <label for="email">이메일</label>
+                <input type="email" id="email" th:field="*{email}" placeholder="이메일 입력" required/>
+                <div th:if="${#fields.hasErrors('email')}" th:errors="*{email}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="password">비밀번호</label>
+                <input type="password" id="password" th:field="*{password}" placeholder="비밀번호 입력" required/>
+                <div th:if="${#fields.hasErrors('password')}" th:errors="*{password}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="name">이름</label>
+                <input type="text" id="name" th:field="*{name}" placeholder="이름 입력" required/>
+                <div th:if="${#fields.hasErrors('name')}" th:errors="*{name}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="age">나이</label>
+                <input type="number" id="age" th:field="*{age}" min="0" placeholder="나이 입력" required/>
+                <div th:if="${#fields.hasErrors('age')}" th:errors="*{age}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="gender">성별</label>
+                <select id="gender" th:field="*{gender}" required>
+                    <option value="" disabled selected>-- 선택 --</option>
+                    <option value="MALE">남성</option>
+                    <option value="FEMALE">여성</option>
+                </select>
+                <div th:if="${#fields.hasErrors('gender')}" th:errors="*{gender}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="address">주소</label>
+                <input type="text" id="address" th:field="*{address}" placeholder="주소 입력" required/>
+                <div th:if="${#fields.hasErrors('address')}" th:errors="*{address}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="phoneNumber">전화번호</label>
+                <input type="text" id="phoneNumber" th:field="*{phoneNumber}" placeholder="전화번호 입력" required/>
+                <div th:if="${#fields.hasErrors('phoneNumber')}" th:errors="*{phoneNumber}" class="error-msg"></div>
+            </div>
+        </fieldset>
 
-        <!-- 펫 정보 입력 영역 -->
-        <div class="form-title">반려동물 정보</div>
-        <div class="form-group">
-            <label for="petName">이름</label>
-            <input type="text" id="petName" th:field="*{petName}" required/>
-            <div th:if="${#fields.hasErrors('petName')}" th:errors="*{petName}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="petType">종/타입</label>
-            <input type="text" id="petType" th:field="*{petType}" placeholder="예: Beagle, Pome ..." required/>
-            <div th:if="${#fields.hasErrors('petType')}" th:errors="*{petType}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="petAge">나이</label>
-            <input type="number" id="petAge" th:field="*{petAge}" min="0" required/>
-            <div th:if="${#fields.hasErrors('petAge')}" th:errors="*{petAge}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="petGender">성별</label>
-            <select id="petGender" th:field="*{petGender}" required>
-                <option value="" disabled selected>-- 선택 --</option>
-                <option value="MALE">남</option>
-                <option value="FEMALE">여</option>
-            </select>
-            <div th:if="${#fields.hasErrors('petGender')}" th:errors="*{petGender}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="petWeight">몸무게</label>
-            <input type="number" id="petWeight" th:field="*{petWeight}" step="0.1" min="0" required/>
-            <div th:if="${#fields.hasErrors('petWeight')}" th:errors="*{petWeight}" class="error-msg"></div>
-        </div>
-        <div class="form-group">
-            <label for="petPersonality">성격</label>
-            <textarea id="petPersonality" th:field="*{petPersonality}" rows="3"></textarea>
-        </div>
+        <!-- 펫 정보 -->
+        <fieldset>
+            <legend>반려동물 정보</legend>
+            <div class="form-group">
+                <label for="petName">이름</label>
+                <input type="text" id="petName" th:field="*{petName}" placeholder="반려동물 이름 입력" required/>
+                <div th:if="${#fields.hasErrors('petName')}" th:errors="*{petName}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="petType">종/타입</label>
+                <input type="text" id="petType" th:field="*{petType}" placeholder="예: Beagle, Poodle..." required/>
+                <div th:if="${#fields.hasErrors('petType')}" th:errors="*{petType}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="petAge">나이</label>
+                <input type="number" id="petAge" th:field="*{petAge}" min="0" placeholder="반려동물 나이 입력" required/>
+                <div th:if="${#fields.hasErrors('petAge')}" th:errors="*{petAge}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="petGender">성별</label>
+                <select id="petGender" th:field="*{petGender}" required>
+                    <option value="" disabled selected>-- 선택 --</option>
+                    <option value="MALE">남</option>
+                    <option value="FEMALE">여</option>
+                </select>
+                <div th:if="${#fields.hasErrors('petGender')}" th:errors="*{petGender}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="petWeight">몸무게</label>
+                <input type="number" id="petWeight" th:field="*{petWeight}" step="0.1" min="0" placeholder="반려동물 몸무게 입력" required/>
+                <div th:if="${#fields.hasErrors('petWeight')}" th:errors="*{petWeight}" class="error-msg"></div>
+            </div>
+            <div class="form-group">
+                <label for="petPersonality">성격</label>
+                <textarea id="petPersonality" th:field="*{petPersonality}" rows="3" placeholder="반려동물의 성격"></textarea>
+            </div>
+        </fieldset>
 
-        <!-- 에러 메시지 (if any) -->
+        <!-- 에러 메시지 -->
         <div th:if="${error != null}" class="error-msg">
             <p th:text="${error}"></p>
         </div>

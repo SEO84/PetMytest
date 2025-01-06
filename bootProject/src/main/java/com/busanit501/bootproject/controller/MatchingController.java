@@ -1,4 +1,3 @@
-// MatchingController.java
 package com.busanit501.bootproject.controller;
 
 import com.busanit501.bootproject.domain.MatchingRoom;
@@ -6,10 +5,14 @@ import com.busanit501.bootproject.domain.Pet;
 import com.busanit501.bootproject.domain.RoomParticipant;
 import com.busanit501.bootproject.domain.User;
 import com.busanit501.bootproject.dto.MatchingRoomDTO;
+import com.busanit501.bootproject.exception.ResourceNotFoundException;
+import com.busanit501.bootproject.repository.UserRepository;
 import com.busanit501.bootproject.service.MatchingService;
 import com.busanit501.bootproject.service.PetService;
 import com.busanit501.bootproject.service.UserService;
 import jakarta.servlet.http.HttpSession;
+import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -17,24 +20,25 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
-import java.util.stream.Collectors;
-
-import jakarta.validation.Valid;
 
 @Controller
 @RequestMapping("/matching")
 public class MatchingController {
 
     private final MatchingService matchingService;
-    private final UserService userService;
     private final PetService petService;
+    private final UserRepository userRepository;
+    private final UserService userService;
 
+    @Autowired
     public MatchingController(MatchingService matchingService,
-                              UserService userService,
-                              PetService petService) {
+                              PetService petService,
+                              UserRepository userRepository,
+                              UserService userService) {
         this.matchingService = matchingService;
-        this.userService = userService;
         this.petService = petService;
+        this.userRepository = userRepository;
+        this.userService = userService;
     }
 
     /**
@@ -42,15 +46,14 @@ public class MatchingController {
      */
     @GetMapping("/list")
     public String list(Model model, HttpSession session) {
-        User loginUser = (User) session.getAttribute("loginUser");
+        User loginUser = getManagedLoginUser(session);
         if (loginUser == null) {
             return "redirect:/user/login";
         }
 
         List<MatchingRoom> rooms = matchingService.getAllRooms();
         model.addAttribute("rooms", rooms);
-
-        return "matching/list"; // list.html
+        return "matching/list";
     }
 
     /**
@@ -58,21 +61,22 @@ public class MatchingController {
      */
     @GetMapping("/create")
     public String createForm(HttpSession session, Model model) {
-        // 로그인 체크
-        User loginUser = (User) session.getAttribute("loginUser");
+        User loginUser = getManagedLoginUser(session);
         if (loginUser == null) {
             return "redirect:/user/login";
         }
 
-        // 사용자의 반려동물 목록 가져오기
+        // 사용자의 반려동물 목록을 조회
         List<Pet> userPets = petService.findAllByUserId(loginUser.getUserId());
         model.addAttribute("userPets", userPets);
 
-        // 매칭방 생성 폼을 위한 DTO 추가
-        model.addAttribute("matchingRoomDTO", new MatchingRoomDTO());
+        // 매칭방 생성 DTO를 모델에 추가
+        MatchingRoomDTO dto = new MatchingRoomDTO();
+        model.addAttribute("matchingRoomDTO", dto);
 
-        return "matching/create"; // create.html
+        return "matching/create";
     }
+
 
     /**
      * 매칭방 생성 처리
@@ -83,187 +87,165 @@ public class MatchingController {
                                HttpSession session,
                                Model model,
                                RedirectAttributes redirectAttributes) {
-        User loginUser = (User) session.getAttribute("loginUser");
+        User loginUser = getManagedLoginUser(session);
         if (loginUser == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요합니다.");
             return "redirect:/user/login";
         }
 
         if (bindingResult.hasErrors()) {
-            // 사용자의 반려동물 목록 다시 모델에 추가
             List<Pet> userPets = petService.findAllByUserId(loginUser.getUserId());
             model.addAttribute("userPets", userPets);
-            return "matching/create"; // 오류 메시지와 함께 폼 재표시
+            return "matching/create";
         }
 
         try {
             matchingService.createRoom(dto, loginUser);
+            redirectAttributes.addFlashAttribute("successMessage", "매칭방이 성공적으로 생성되었습니다.");
+            return "redirect:/matching/list";
         } catch (RuntimeException e) {
-            model.addAttribute("errorMessage", e.getMessage());
-            // 사용자의 반려동물 목록 다시 모델에 추가
             List<Pet> userPets = petService.findAllByUserId(loginUser.getUserId());
             model.addAttribute("userPets", userPets);
-            return "matching/create"; // 오류 메시지와 함께 폼 재표시
+            model.addAttribute("errorMessage", e.getMessage());
+            return "matching/create";
         }
-
-        return "redirect:/matching/list";
     }
+
 
     /**
      * 매칭방 상세 페이지
      */
-    @GetMapping("/detail/{roomId}")
-    public String detail(@PathVariable Integer roomId,
-                         Model model,
-                         HttpSession session) {
-        MatchingRoom room = matchingService.getRoomById(roomId);
-        if (room == null) {
-            model.addAttribute("errorMessage", "매칭방을 찾을 수 없습니다.");
-            return "error"; // error.html
+    @GetMapping("/detail/{id}")
+    public String getMatchingRoomDetail(@PathVariable("id") Integer roomId, Model model, HttpSession session, RedirectAttributes redirectAttributes) {
+        User loginUser = getManagedLoginUser(session);
+        if (loginUser == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요합니다.");
+            return "redirect:/user/login";
         }
-        model.addAttribute("room", room);
 
-        // 참가자 목록 조회
-        List<RoomParticipant> participants = matchingService.getParticipantsByRoomId(roomId);
+        try {
+            MatchingRoom room = matchingService.getRoomById(roomId);
+            populateModelForDetail(model, room, loginUser);
+            return "matching/detail";
+        } catch (ResourceNotFoundException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/matching/list";
+        }
+    }
 
-        // 방장 제외 및 Rejected 상태 제외
-        List<RoomParticipant> filteredParticipants = participants.stream()
-                .filter(p -> !p.getUser().getUserId().equals(room.getHostPet().getUser().getUserId()))
-                .filter(p -> p.getStatus() != RoomParticipant.ParticipantStatus.Rejected)
-                .collect(Collectors.toList());
-        model.addAttribute("participants", filteredParticipants);
+    /**
+     * 참가 신청 처리 핸들러
+     */
+    @PostMapping("/apply/{roomId}")
+    public String applyRoom(@PathVariable("roomId") Integer roomId,
+                            @RequestParam(value = "additionalPetIds", required = false) List<Integer> additionalPetIds,
+                            HttpSession session,
+                            RedirectAttributes redirectAttributes) {
+        User loginUser = getManagedLoginUser(session);
+        if (loginUser == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요합니다.");
+            return "redirect:/user/login";
+        }
 
-        // 로그인 유저 확인
+        try {
+            matchingService.applyRoom(roomId, loginUser.getUserId(), additionalPetIds);
+            redirectAttributes.addFlashAttribute("successMessage", "참가 신청이 성공적으로 완료되었습니다.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+
+        return "redirect:/matching/detail/" + roomId;
+    }
+
+    /**
+     * 세션에서 로그인된 사용자를 매니지드 엔티티로 재로드합니다.
+     */
+    private User getManagedLoginUser(HttpSession session) {
         User loginUser = (User) session.getAttribute("loginUser");
-        boolean isHost = false;
-        if (loginUser != null &&
-                room.getHostPet().getUser().getUserId().equals(loginUser.getUserId())) {
-            // 방장인 경우
-            isHost = true;
+        if (loginUser == null) {
+            return null;
         }
+        return userRepository.findById(loginUser.getUserId())
+                .orElse(null);
+    }
+
+    /**
+     * 매칭방 상세 페이지를 위한 모델을 설정합니다.
+     *
+     * @param model     모델 객체
+     * @param room      매칭방 객체
+     * @param loginUser 로그인 사용자 객체
+     */
+    private void populateModelForDetail(Model model, MatchingRoom room, User loginUser) {
+        model.addAttribute("room", room);
+        model.addAttribute("loginUser", loginUser); // 로그인 사용자 정보 추가
+
+        List<RoomParticipant> participants = matchingService.getParticipantsByRoomId(room.getRoomId());
+
+        // 참가 상태별로 분류
+        List<RoomParticipant> pendingParticipants = matchingService.filterParticipants(participants, RoomParticipant.ParticipantStatus.Pending);
+        List<RoomParticipant> acceptedParticipants = matchingService.filterParticipants(participants, RoomParticipant.ParticipantStatus.Accepted);
+
+        model.addAttribute("pendingParticipants", pendingParticipants);
+        model.addAttribute("acceptedParticipants", acceptedParticipants);
+
+        boolean isHost = room.getHost().getUserId().equals(loginUser.getUserId());
         model.addAttribute("isHost", isHost);
 
-        if (isHost) {
-            // 방장인 경우 승인 대기 중인 참가자만 표시
-            List<RoomParticipant> pendingParticipants = filteredParticipants.stream()
-                    .filter(p -> p.getStatus() == RoomParticipant.ParticipantStatus.Pending)
-                    .collect(Collectors.toList());
-            model.addAttribute("pendingParticipants", pendingParticipants);
-
-            // 방장인 경우 승인된 참가자도 표시
-            List<RoomParticipant> acceptedParticipants = filteredParticipants.stream()
-                    .filter(p -> p.getStatus() == RoomParticipant.ParticipantStatus.Accepted)
-                    .collect(Collectors.toList());
-            model.addAttribute("acceptedParticipants", acceptedParticipants);
-        } else if (loginUser != null) {
-            // 일반 유저인 경우 승인된 참가자만 표시
-            List<RoomParticipant> acceptedParticipants = filteredParticipants.stream()
-                    .filter(p -> p.getStatus() == RoomParticipant.ParticipantStatus.Accepted)
-                    .collect(Collectors.toList());
-            model.addAttribute("acceptedParticipants", acceptedParticipants);
-
-            // 일반 유저라면, 반려동물 목록을 넘겨준다.
+        if (!isHost) {
+            // 호스트가 아닌 경우, 사용자의 반려동물 목록 추가
             List<Pet> userPets = petService.findAllByUserId(loginUser.getUserId());
             model.addAttribute("userPets", userPets);
         }
-
-        return "matching/detail"; // detail.html
     }
-
-    /**
-     * 참여 신청 (다중 펫)
-     * - additionalPetIds: 여러 반려동물 ID를 리스트로 받음
-     */
-    @PostMapping("/apply/{roomId}")
-    public String apply(
-            @PathVariable Integer roomId,
-            @RequestParam(required = false) List<Integer> additionalPetIds,
-            HttpSession session,
-            RedirectAttributes redirectAttributes
-    ) {
-        User loginUser = (User) session.getAttribute("loginUser");
-        if (loginUser == null) {
-            return "redirect:/user/login";
-        }
-
+    @PostMapping("/accept/{roomId}/{userId}")
+    public String acceptParticipant(@PathVariable("roomId") Integer roomId,
+                                    @PathVariable("userId") Integer userId,
+                                    RedirectAttributes redirectAttributes) {
         try {
-            // 여러 펫이면 여러 번 applyRoom 호출
-            if (additionalPetIds == null || additionalPetIds.isEmpty()) {
-                // 최소 하나의 펫 선택을 요구
-                throw new RuntimeException("적어도 하나의 반려동물을 선택해야 합니다.");
-            } else {
-                for (Integer pId : additionalPetIds) {
-                    matchingService.applyRoom(roomId, loginUser.getUserId(), pId);
-                }
-            }
+            matchingService.acceptParticipant(roomId, userId); // 서비스 메서드 호출
+            redirectAttributes.addFlashAttribute("successMessage", "참가자가 승인되었습니다.");
         } catch (RuntimeException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/matching/detail/" + roomId;
         }
+        return "redirect:/matching/detail/" + roomId;
+    }
 
+    @PostMapping("/reject/{roomId}/{userId}")
+    public String rejectParticipant(@PathVariable("roomId") Integer roomId,
+                                    @PathVariable("userId") Integer userId,
+                                    RedirectAttributes redirectAttributes) {
+        try {
+            matchingService.rejectParticipant(roomId, userId); // 서비스 메서드 호출
+            redirectAttributes.addFlashAttribute("successMessage", "참가자가 거절되었습니다.");
+        } catch (RuntimeException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
         return "redirect:/matching/detail/" + roomId;
     }
 
     /**
-     * 참가 승인
+     * 매칭방의 호스트인지 확인합니다.
+     *
+     * @param roomId            매칭방 ID
+     * @param session           HTTP 세션
+     * @param redirectAttributes 리다이렉트 시 속성 전달 객체
+     * @return 호스트인 경우 true, 아니면 false
      */
-    @PostMapping("/accept/{roomId}/{userId}/{petId}")
-    public String accept(@PathVariable Integer roomId,
-                         @PathVariable Integer userId,
-                         @PathVariable Integer petId,
-                         HttpSession session,
-                         RedirectAttributes redirectAttributes) {
-        User loginUser = (User) session.getAttribute("loginUser");
+    private boolean isAuthorizedHost(Integer roomId, HttpSession session, RedirectAttributes redirectAttributes) {
+        User loginUser = getManagedLoginUser(session);
         if (loginUser == null) {
-            return "redirect:/user/login";
+            redirectAttributes.addFlashAttribute("errorMessage", "로그인이 필요합니다.");
+            return false;
         }
 
-        // 방 정보 및 방장 확인
         MatchingRoom room = matchingService.getRoomById(roomId);
-        if (room == null || !room.getHostPet().getUser().getUserId().equals(loginUser.getUserId())) {
-            // 방이 없거나 방장이 아니라면 접근 금지
+        if (room == null || !room.getHost().getUserId().equals(loginUser.getUserId())) {
             redirectAttributes.addFlashAttribute("errorMessage", "접근 권한이 없습니다.");
-            return "redirect:/matching/list";
+            return false;
         }
 
-        try {
-            matchingService.acceptParticipant(roomId, userId, petId);
-        } catch (RuntimeException e) {
-            // 예외 처리 (예: 현재 인원이 초과된 경우)
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-
-        return "redirect:/matching/detail/" + roomId;
+        return true;
     }
 
-    /**
-     * 참가 거절
-     */
-    @PostMapping("/reject/{roomId}/{userId}/{petId}")
-    public String reject(@PathVariable Integer roomId,
-                         @PathVariable Integer userId,
-                         @PathVariable Integer petId,
-                         HttpSession session,
-                         RedirectAttributes redirectAttributes) {
-        User loginUser = (User) session.getAttribute("loginUser");
-        if (loginUser == null) {
-            return "redirect:/user/login";
-        }
-
-        // 방 정보 및 방장 확인
-        MatchingRoom room = matchingService.getRoomById(roomId);
-        if (room == null || !room.getHostPet().getUser().getUserId().equals(loginUser.getUserId())) {
-            // 방이 없거나 방장이 아니라면 접근 금지
-            redirectAttributes.addFlashAttribute("errorMessage", "접근 권한이 없습니다.");
-            return "redirect:/matching/list";
-        }
-
-        try {
-            matchingService.rejectParticipant(roomId, userId, petId);
-        } catch (RuntimeException e) {
-            // 예외 처리
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-        }
-
-        return "redirect:/matching/detail/" + roomId;
-    }
 }

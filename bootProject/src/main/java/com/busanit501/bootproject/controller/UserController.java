@@ -10,7 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
 @RequestMapping("/user")
@@ -18,7 +21,6 @@ public class UserController {
 
     private final UserService userService;
 
-    // 생성자 주입
     @Autowired
     public UserController(UserService userService) {
         this.userService = userService;
@@ -30,7 +32,7 @@ public class UserController {
     @GetMapping("/login")
     public String loginForm(Model model) {
         model.addAttribute("userLoginDTO", new UserLoginDTO());
-        return "/user/login"; // src/main/resources/templates/login.html
+        return "user/login"; // src/main/resources/templates/user/login.html
     }
 
     /**
@@ -42,18 +44,16 @@ public class UserController {
                               HttpSession session,
                               Model model) {
         if (bindingResult.hasErrors()) {
-            return "/user/login"; // 유효성 검사 오류 시 로그인 폼 재표시
+            return "user/login"; // 유효성 검사 오류 시 로그인 폼 재표시
         }
 
         try {
             User user = userService.login(dto);
-            // 로그인 성공 시 세션에 사용자 정보 저장
-            session.setAttribute("loginUser", user);
-            return "redirect:/matching/list"; // 로그인 후 이동할 페이지
+            session.setAttribute("loginUser", user); // 세션에 사용자 정보 저장
+            return "redirect:/matching/list"; // 로그인 성공 후 매칭방 목록으로 이동
         } catch (RuntimeException e) {
-            // 로그인 실패 시 오류 메시지 전달
             model.addAttribute("error", e.getMessage());
-            return "/user/login";
+            return "user/login"; // 로그인 실패 시 로그인 폼 재표시
         }
     }
 
@@ -63,7 +63,7 @@ public class UserController {
     @GetMapping("/register")
     public String registerForm(Model model) {
         model.addAttribute("userRegisterDTO", new UserRegisterDTO());
-        return "user/register"; // src/main/resources/templates/register.html
+        return "user/register"; // src/main/resources/templates/user/register.html
     }
 
     /**
@@ -79,11 +79,10 @@ public class UserController {
 
         try {
             userService.registerWithPet(dto);
-            return "redirect:/matching/list"; // 회원가입 후 로그인 페이지로 이동
+            return "redirect:/user/login"; // 회원가입 성공 후 로그인 페이지로 이동
         } catch (RuntimeException e) {
-            // 회원가입 실패 시 오류 메시지 전달
             model.addAttribute("error", e.getMessage());
-            return "user/register";
+            return "user/register"; // 회원가입 실패 시 회원가입 폼 재표시
         }
     }
 
@@ -101,11 +100,20 @@ public class UserController {
      */
     @GetMapping("/home")
     public String home(HttpSession session, Model model) {
-        User user = (User) session.getAttribute("loginUser");
-        if (user == null) {
+        User loginUser = getLoginUser(session);
+        if (loginUser == null) {
             return "redirect:/user/login";
         }
-        model.addAttribute("user", user);
+        model.addAttribute("user", loginUser);
         return "home"; // src/main/resources/templates/home.html
+    }
+
+    // --------------------- 내부 헬퍼 메서드 ---------------------
+
+    /**
+     * 세션에서 로그인한 사용자 정보를 가져옴
+     */
+    private User getLoginUser(HttpSession session) {
+        return (User) session.getAttribute("loginUser");
     }
 }

@@ -1,40 +1,33 @@
-// RoomParticipant.java
 package com.busanit501.bootproject.domain;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
-
-@Data
+@Getter
+@Setter
 @NoArgsConstructor
 @Entity
 @Table(name = "room_participants")
-public class RoomParticipant {
+public class RoomParticipant extends BaseEntity {
 
-    @EmbeddedId
-    private RoomParticipantId id = new RoomParticipantId();
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "participant_id")
+    private Integer participantId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("roomId")
-    @JoinColumn(name = "room_id")
+    @JoinColumn(name = "matching_room_id", nullable = false)
     private MatchingRoom matchingRoom;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("userId")
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @MapsId("petId") // petId 매핑
-    @JoinColumn(name = "pet_id")
+    @JoinColumn(name = "pet_id", nullable = false)
     private Pet pet;
-
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -44,21 +37,5 @@ public class RoomParticipant {
         Pending,
         Accepted,
         Rejected
-    }
-
-    // 편의 메서드
-    public void setUser(User user) {
-        this.user = user;
-        this.id.setUserId(user.getUserId());
-    }
-
-    public void setMatchingRoom(MatchingRoom matchingRoom) {
-        this.matchingRoom = matchingRoom;
-        this.id.setRoomId(matchingRoom.getRoomId());
-    }
-
-    public void setPet(Pet pet) {
-        this.pet = pet;
-        this.id.setPetId(pet.getPetId());
     }
 }

@@ -7,8 +7,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(CustomException.class)
-    public String handleCustomException(CustomException ex, Model model) {
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public String handleCustomException(ResourceNotFoundException ex, Model model) {
         model.addAttribute("errorMessage", ex.getMessage());
         return "error/customError"; // src/main/resources/templates/error/customError.html
     }

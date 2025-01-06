@@ -1,53 +1,14 @@
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <title>매칭방 상세</title>
-    <style>
-        table {
-            width: 80%;
-            border-collapse: collapse;
-            margin: 20px auto;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
-        }
-        th {
-            background-color: #f2f2f2;
-        }
-        .button {
-            padding: 5px 10px;
-            margin: 2px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .accept-btn {
-            background-color: #4CAF50;
-            color: white;
-        }
-        .reject-btn {
-            background-color: #f44336;
-            color: white;
-        }
-        .apply-btn {
-            background-color: #008CBA;
-            color: white;
-        }
-    </style>
-    <!-- 카카오맵 API 추가 -->
-    <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_MAP_API_KEY&libraries=services"></script>
-</head>
-<body>
-<h1 style="text-align:center;">매칭방 상세</h1>
+<!DOCTYPE html> <html lang="ko" xmlns:th="http://www.thymeleaf.org"> <head> <meta charset="UTF-8"> <title>매칭방 상세</title> <link rel="stylesheet" th:href="@{/css/detail.css}"> <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css"> <script type="text/javascript" src="//dapi.kakao.com/v2/maps/sdk.js?appkey=YOUR_KAKAO_MAP_API_KEY&libraries=services"></script> <style> body { padding: 20px; } h1, h2, h3 { text-align: center; margin-bottom: 20px; } .table { margin-bottom: 20px; } .map-placeholder { width: 100%; height: 400px; margin: 20px auto; } .alert { text-align: center; } </style> </head> <body> <h1>매칭방 상세</h1> <p style="text-align:center;"> <a th:href="@{/matching/list}" class="btn btn-secondary">[ 매칭방 목록으로 돌아가기 ]</a> </p>
 
-<p style="text-align:center;">
-    <a th:href="@{/matching/list}">[ 매칭방 목록으로 돌아가기 ]</a>
-</p>
+<div th:if="${successMessage}" class="alert alert-success">
+    <p th:text="${successMessage}"></p>
+</div>
+<div th:if="${errorMessage}" class="alert alert-danger">
+    <p th:text="${errorMessage}"></p>
+</div>
 
-<table>
-    <thead>
+<table class="table table-bordered">
+    <thead class="thead-dark">
     <tr>
         <th>방번호</th>
         <th>제목</th>
@@ -63,25 +24,22 @@
         <td th:text="${room.roomId}">1</td>
         <td th:text="${room.title}">제목</td>
         <td th:text="${room.place}">장소</td>
-        <td th:text="${room.meetingDate}">날짜</td>
-        <td th:text="${room.meetingTime}">시간</td>
+        <td th:text="${#temporals.format(room.meetingDate, 'yyyy-MM-dd')}">날짜</td>
+        <td th:text="${#temporals.format(room.meetingTime, 'HH:mm')}">시간</td>
         <td>
             <span th:text="${room.currentParticipants}">0</span> /
             <span th:text="${room.maxParticipants}">0</span>
         </td>
-        <td th:text="${room.hostPet.user.name}">방장</td>
+        <td th:text="${room.host?.name}">방장</td>
     </tr>
     </tbody>
 </table>
 
-<!-- 방장인 경우: 참가 신청 목록 관리 -->
 <div th:if="${isHost}">
-    <h2 style="text-align:center;">참가 신청 목록</h2>
-
-    <!-- 승인 대기 중인 참가자 -->
-    <h3 style="text-align:center;">승인 대기 중</h3>
-    <table>
-        <thead>
+    <h2>참가 신청 목록</h2>
+    <h3>승인 대기 중</h3>
+    <table class="table table-bordered">
+        <thead class="thead-light">
         <tr>
             <th>사용자 이름</th>
             <th>펫 이름</th>
@@ -94,18 +52,14 @@
         <tr th:each="participant : ${pendingParticipants}">
             <td th:text="${participant.user.name}">사용자 이름</td>
             <td th:text="${participant.pet.name}">펫 이름</td>
-            <td th:text="${#dates.format(participant.createdAt, 'yyyy-MM-dd HH:mm')}">신청 시간</td>
+            <td th:text="${participant.created_at != null ? #temporals.format(participant.created_at, 'yyyy-MM-dd HH:mm') : '날짜 없음'}">신청 시간</td>
             <td th:text="${participant.status}">상태</td>
             <td>
-                <form th:action="@{/matching/accept/{roomId}/{userId}/{petId}(roomId=${room.roomId}, userId=${participant.user.userId}, petId=${participant.pet.petId})}" method="post" style="display:inline;">
-                    <!-- CSRF 토큰 추가 -->
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                    <button type="submit" class="button accept-btn">승인</button>
+                <form th:action="@{/matching/accept/{roomId}/{userId}(roomId=${room.roomId}, userId=${participant.user.userId})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-success btn-sm">승인</button>
                 </form>
-                <form th:action="@{/matching/reject/{roomId}/{userId}/{petId}(roomId=${room.roomId}, userId=${participant.user.userId}, petId=${participant.pet.petId})}" method="post" style="display:inline;">
-                    <!-- CSRF 토큰 추가 -->
-                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-                    <button type="submit" class="button reject-btn">거절</button>
+                <form th:action="@{/matching/reject/{roomId}/{userId}(roomId=${room.roomId}, userId=${participant.user.userId})}" method="post" style="display:inline;">
+                    <button type="submit" class="btn btn-danger btn-sm">거절</button>
                 </form>
             </td>
         </tr>
@@ -115,10 +69,9 @@
         </tbody>
     </table>
 
-    <!-- 승인된 참가자 목록 -->
-    <h3 style="text-align:center;">승인된 참가자</h3>
-    <table>
-        <thead>
+    <h3>승인된 참가자</h3>
+    <table class="table table-bordered">
+        <thead class="thead-light">
         <tr>
             <th>사용자 이름</th>
             <th>펫 이름</th>
@@ -130,7 +83,7 @@
         <tr th:each="participant : ${acceptedParticipants}">
             <td th:text="${participant.user.name}">사용자 이름</td>
             <td th:text="${participant.pet.name}">펫 이름</td>
-            <td th:text="${#dates.format(participant.createdAt, 'yyyy-MM-dd HH:mm')}">참가 시간</td>
+            <td th:text="${participant.created_at != null ? #temporals.format(participant.created_at, 'yyyy-MM-dd HH:mm') : '날짜 없음'}">참가 시간</td>
             <td th:text="${participant.status}">상태</td>
         </tr>
         <tr th:if="${#lists.isEmpty(acceptedParticipants)}">
@@ -140,11 +93,10 @@
     </table>
 </div>
 
-<!-- 일반 유저인 경우: 참가자 목록 및 참가 신청 -->
 <div th:if="${!isHost}">
-    <h2 style="text-align:center;">참가자 목록</h2>
-    <table>
-        <thead>
+    <h2>참가자 목록</h2>
+    <table class="table table-bordered">
+        <thead class="thead-light">
         <tr>
             <th>사용자 이름</th>
             <th>펫 이름</th>
@@ -156,7 +108,7 @@
         <tr th:each="participant : ${acceptedParticipants}">
             <td th:text="${participant.user.name}">사용자 이름</td>
             <td th:text="${participant.pet.name}">펫 이름</td>
-            <td th:text="${#dates.format(participant.createdAt, 'yyyy-MM-dd HH:mm')}">참가 시간</td>
+            <td th:text="${participant.created_at != null ? #temporals.format(participant.created_at, 'yyyy-MM-dd HH:mm') : '날짜 없음'}">참가 시간</td>
             <td th:text="${participant.status}">상태</td>
         </tr>
         <tr th:if="${#lists.isEmpty(acceptedParticipants)}">
@@ -165,29 +117,60 @@
         </tbody>
     </table>
 
-    <!-- 참가 신청 섹션 -->
-    <h2 style="text-align:center;">참가 신청</h2>
+    <h2>참가 신청</h2>
     <form th:action="@{/matching/apply/{roomId}(roomId=${room.roomId})}" method="post" style="text-align:center;">
-        <!-- CSRF 토큰 추가 -->
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
-
         <label for="additionalPetIds">반려동물 선택:</label>
-        <select name="additionalPetIds" id="additionalPetIds" multiple required>
+        <select name="additionalPetIds" id="additionalPetIds" multiple required class="form-control" style="width: 300px; display: inline-block;">
             <option th:each="pet : ${userPets}" th:value="${pet.petId}" th:text="${pet.name}"></option>
         </select><br/><br/>
-        <button type="submit" class="button apply-btn">참가 신청</button>
+        <button type="submit" class="btn btn-primary">참가 신청</button>
     </form>
 </div>
 
-<!-- 오류 메시지 표시 -->
-<div th:if="${errorMessage}" style="text-align:center; color: red;">
-    <p th:text="${errorMessage}"></p>
-</div>
+<div class="map-placeholder"></div>
 
-<!-- 카카오맵을 표시할 컨테이너 -->
-<div class="map-placeholder" style="width:500px;height:400px;margin:20px auto;"></div>
+<script th:inline="javascript">
+    document.addEventListener('DOMContentLoaded', function () {
+        function initMap(address) {
+            if (typeof kakao === 'undefined') {
+                console.error('카카오맵 API를 로드할 수 없습니다.');
+                return;
+            }
+            const mapContainer = document.querySelector('.map-placeholder');
+            const geocoder = new kakao.maps.services.Geocoder();
+            geocoder.addressSearch(address, function (result, status) {
+                if (status === kakao.maps.services.Status.OK) {
+                    const coords = new kakao.maps.LatLng(result.y, result.x);
+                    const map = new kakao.maps.Map(mapContainer, {
+                        center: coords,
+                        level: 3
+                    });
+                    const marker = new kakao.maps.Marker({
+                        position: coords
+                    });
+                    marker.setMap(map);
+                    const infowindow = new kakao.maps.InfoWindow({
+                        content: `<div style="padding:5px;">${address}</div>`
+                    });
+                    infowindow.open(map, marker);
+                } else {
+                    console.error('주소 검색 실패:', status);
+                    showError(mapContainer, '주소를 찾을 수 없습니다.');
+                }
+            });
+        }
 
-<!-- 상세 페이지 전용 JavaScript 파일 로드 -->
-<script th:src="@{/js/detail.js}"></script>
+        function showError(container, message) {
+            container.innerHTML = `<div style="color: red; text-align: center; padding: 20px;">${message}</div>`;
+        }
+
+        const place = /*[[${room.place}]]*/ '서울특별시';
+        initMap(place);
+    });
+</script>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
 </body>
 </html>

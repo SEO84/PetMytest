@@ -1,21 +1,21 @@
-// Pet.java
 package com.busanit501.bootproject.domain;
 
 import com.busanit501.bootproject.enums.Gender;
 import jakarta.persistence.*;
-import lombok.Data;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
-
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "pets")
-public class Pet {
+public class Pet extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "pet_id")
     private Integer petId;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -25,23 +25,22 @@ public class Pet {
     @Column(nullable = false)
     private String name;
 
-    private String type; // 예: "Beagle", "Pome" 등
+    @Column(nullable = false)
+    private String type;
 
+    @Column(nullable = false)
     private Integer age;
 
     @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
     private Gender gender;
 
-    private Float weight;
+    @Column(nullable = false)
+    private Double weight;
 
+    @Column(nullable = false)
     private String personality;
 
-    @CreationTimestamp
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
-
-    // 기타 필드 및 관계 설정
+    @Column(name = "is_default", nullable = false)
+    private Boolean isDefault = false;
 }
